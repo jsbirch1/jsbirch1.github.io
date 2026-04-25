@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Personal Finance Tracker</title>
+<style>
+  :root {
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --surface2: #f7f9fc;
+    --border: #e2e8f0;
+    --border-hover: #cbd5e1;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --accent-light: #eff6ff;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --red-border: #fecaca;
+    --orange: #ea580c;
+    --orange-bg: #fff7ed;
+    --orange-border: #fed7aa;
+    --yellow: #ca8a04;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+    --sidebar-bg: #1e293b;
+    --sidebar-text: #e2e8f0;
+    --sidebar-muted: #94a3b8;
+    --sidebar-active: #3b82f6;
+    --sidebar-hover: #334155;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+    display: flex;
+  }
+
+  /* ===== LEFT SIDEBAR ===== */
+  .sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--sidebar-bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+  }
+
+  .sidebar-header {
+    padding: 20px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .sidebar-header h1 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-header h1 svg { color: var(--sidebar-active); }
+
+  .tax-year-badge {
+    display: inline-block;
+    margin-top: 8px;
+    background: rgba(59,130,246,0.15);
+    border: 1px solid rgba(59,130,246,0.3);
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    color: var(--sidebar-active);
+    font-weight: 600;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 12px 10px;
+    overflow-y: auto;
+  }
+
+  .sidebar-section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--sidebar-muted);
+    padding: 12px 10px 6px;
+    font-weight: 600;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--sidebar-text);
+    cursor: pointer;
+    transition: all 0.12s;
+    margin-bottom: 2px;
+    user-select: none;
+  }
+
+  .nav-item:hover { background: var(--sidebar-hover); }
+
+  .nav-item.active {
+    background: var(--sidebar-active);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .nav-item .nav-icon { font-size: 15px; width: 20px; text-align: center; }
+
+  .nav-item .nav-close {
+    margin-left: auto;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--sidebar-muted);
+    transition: all 0.12s;
+    opacity: 0;
+  }
+
+  .nav-item:hover .nav-close { opacity: 1; }
+  .nav-item .nav-close:hover { background: rgba(220,38,38,0.3); color: #fca5a5; }
+
+  .sidebar-footer {
+    padding: 12px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .btn-add-month {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px dashed rgba(59,130,246,0.4);
+    background: rgba(59,130,246,0.08);
+    color: var(--sidebar-active);
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .btn-add-month:hover { background: rgba(59,130,246,0.15); border-color: var(--sidebar-active); }
+
+  /* ===== MAIN CONTENT ===== */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 32px;
+  }
+
+  .page-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .page-header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .content {
+    padding: 24px 32px;
+    max-width: 1100px;
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    padding: 7px 16px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    transition: all 0.12s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+
+  .btn-danger {
+    border-color: var(--red);
+    color: var(--red);
+    background: var(--red-bg);
+  }
+
+  .btn-danger:hover { background: var(--red); color: #fff; }
+
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .card-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .card-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ===== SUMMARY CARDS ===== */
+  .summary-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .summary-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  .summary-value { font-size: 22px; font-weight: 800; }
+  .summary-detail { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .text-green { color: var(--green); }
+  .text-red { color: var(--red); }
+  .text-orange { color: var(--orange); }
+  .text-accent { color: var(--accent); }
+  .text-purple { color: var(--purple); }
+
+  /* ===== TABLES ===== */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+    background: var(--surface2);
+  }
+
+  th.right, td.right { text-align: right; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+
+  tr.total-row td { font-weight: 700; border-top: 2px solid var(--border); padding-top: 12px; }
+  tr.subtotal-row td { font-weight: 600; background: var(--surface2); }
+
+  /* ===== PAYSLIP LAYOUT ===== */
+  .payslip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  .payslip-field {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .payslip-field:last-child { border-bottom: none; }
+  .payslip-field .label { color: var(--text-muted); }
+  .payslip-field .value { font-weight: 700; text-align: right; }
+
+  .section-divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+
+  /* ===== INPUTS ===== */
+  input, select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+  }
+
+  input::placeholder { color: var(--text-muted); }
+
+  .salary-input-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .salary-input-group label { font-size: 13px; color: var(--text-muted); white-space: nowrap; font-weight: 600; }
+  .salary-input-group input { width: 150px; }
+
+  .delete-row-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.12s;
+  }
+
+  .delete-row-btn:hover { background: var(--red-bg); color: var(--red); }
+
+  .balance-row { display: flex; align-items: center; gap: 16px; padding: 10px 0; }
+  .balance-row label { font-size: 13px; color: var(--text-muted); min-width: 120px; font-weight: 600; }
+  .balance-row input { width: 160px; }
+  .balance-row .balance-value { font-size: 20px; font-weight: 800; }
+
+  /* ===== INFO BANNER ===== */
+  .info-banner {
+    background: var(--accent-light);
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+
+  /* ===== CATEGORY TAGS ===== */
+  .category-tag { display: inline-block; padding: 2px 10px; border-radius: 5px; font-size: 11px; font-weight: 600; }
+  .cat-housing { background: #eff6ff; color: #2563eb; }
+  .cat-utilities { background: #fff7ed; color: #ea580c; }
+  .cat-transport { background: #f0fdf4; color: #16a34a; }
+  .cat-food { background: #fefce8; color: #ca8a04; }
+  .cat-insurance { background: #fef2f2; color: #dc2626; }
+  .cat-subscriptions { background: #f5f3ff; color: #7c3aed; }
+  .cat-savings { background: #ecfdf5; color: #059669; }
+  .cat-other { background: #f1f5f9; color: #64748b; }
+
+  /* ===== ARCHIVE ===== */
+  .archive-list { display: grid; gap: 12px; }
+
+  .archive-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  .archive-item-info h3 { font-size: 14px; font-weight: 700; }
+  .archive-item-info p { font-size: 12px; color: var(--text-muted); }
+
+  .empty-state { text-align: center; padding: 48px; color: var(--text-muted); }
+  .empty-state-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.3; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15,23,42,0.5);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    min-width: 420px;
+    max-width: 520px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+
+  .modal h2 { font-size: 17px; margin-bottom: 18px; font-weight: 700; }
+
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .checkbox-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+  }
+
+  /* ===== BUDGET TABLE ===== */
+  .budget-table-wrap { max-height: 500px; overflow-y: auto; }
+  .budget-table-wrap::-webkit-scrollbar { width: 6px; }
+  .budget-table-wrap::-webkit-scrollbar-track { background: var(--surface2); }
+  .budget-table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .negative { color: var(--red); }
+  .positive { color: var(--green); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    .sidebar { width: 200px; min-width: 200px; }
+    .main { margin-left: 200px; }
+    .payslip-grid { grid-template-columns: 1fr; }
+    .content { padding: 16px; }
+  }
+
+  /* Toggle for annual/monthly view */
+  .view-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+    font-size: 12px;
+  }
+
+  .view-toggle-btn {
+    padding: 5px 14px;
+    cursor: pointer;
+    background: var(--surface);
+    border: none;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 12px;
+    font-family: inherit;
+    transition: all 0.12s;
+  }
+
+  .view-toggle-btn:not(:last-child) { border-right: 1px solid var(--border); }
+  .view-toggle-btn.active { background: var(--accent); color: #fff; }
+  .view-toggle-btn:hover:not(.active) { background: var(--surface2); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Finance Tracker
+    </h1>
+    <span class="tax-year-badge">Tax Year 2026/27</span>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="sidebar-section-label">Income</div>
+    <div class="nav-item active" data-tab="payslip" onclick="switchTab('payslip')">
+      <span class="nav-icon">&#128176;</span> Payslip Calculator
+    </div>
+
+    <div class="sidebar-section-label">Monthly Budgets</div>
+    <div id="monthNavContainer"></div>
+
+    <div class="sidebar-section-label">History</div>
+    <div class="nav-item" data-tab="archive" onclick="switchTab('archive')">
+      <span class="nav-icon">&#128451;</span> Archive
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="btn-add-month" onclick="addMonth()">+ Add Month</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="page-header" id="pageHeader">
+    <h2>Income / Payslip</h2>
+    <p>Auto-calculated from your gross salary</p>
+  </div>
+
+  <div class="content">
+    <!-- PAYSLIP TAB -->
+    <div class="tab-content active" id="tab-payslip">
+      <div class="info-banner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        Tax code 1078L &middot; NI threshold &pound;12,570 &middot; Pension 4% (band &pound;6,240&ndash;&pound;50,270)
+      </div>
+
+      <div class="salary-input-group">
+        <label for="grossSalary">Annual Gross Salary:</label>
+        <input type="text" id="grossSalary" value="60000" onchange="recalcPayslip()" style="text-align:right;">
+        <label for="taxCode">Tax Code:</label>
+        <input type="text" id="taxCode" value="1078L" onchange="recalcPayslip()" style="width:100px;">
+        <button class="btn btn-primary btn-sm" onclick="recalcPayslip()">Recalculate</button>
+      </div>
+
+      <div class="summary-row" id="payslipSummary"></div>
+
+      <div class="payslip-grid">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Gross to Net Breakdown</div>
+              <div class="card-subtitle">Monthly figures</div>
+            </div>
+          </div>
+          <div id="payslipBreakdown"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Annual Summary</div>
+              <div class="card-subtitle">Full tax year overview</div>
+            </div>
+          </div>
+          <div id="annualSummary"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Tax, NI &amp; Pension Calculation Detail</div>
+            <div class="card-subtitle">Banded breakdown with annual and monthly figures</div>
+          </div>
+          <div class="view-toggle" id="detailViewToggle">
+            <button class="view-toggle-btn active" onclick="setDetailView('monthly')">Monthly</button>
+            <button class="view-toggle-btn" onclick="setDetailView('annual')">Annual</button>
+          </div>
+        </div>
+        <div id="taxDetail"></div>
+      </div>
+    </div>
+
+    <!-- ARCHIVE TAB -->
+    <div class="tab-content" id="tab-archive">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Archived Months</div></div>
+        <div id="archiveList" class="archive-list">
+          <div class="empty-state">
+            <div class="empty-state-icon">&#128451;</div>
+            <p>No archived months yet.<br>Archive a month from its budget tab.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add month -->
+<div class="modal-overlay" id="addMonthModal">
+  <div class="modal">
+    <h2>Add Budget Month</h2>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:13px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600;">Select Month</label>
+      <select id="newMonthSelect" style="width:100%;"></select>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:13px;color:var(--text-muted);display:block;margin-bottom:4px;font-weight:600;">Opening Balance (&pound;)</label>
+      <input type="number" id="newMonthBalance" value="0" style="width:100%;text-align:right;" step="0.01">
+    </div>
+    <div class="checkbox-row" id="copyExpensesRow" style="display:none;">
+      <input type="checkbox" id="copyExpensesCheck" checked>
+      <label for="copyExpensesCheck">Copy expenses from <strong id="copyFromLabel">previous month</strong></label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmAddMonth()">Add Month</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: View archive -->
+<div class="modal-overlay" id="archiveViewModal">
+  <div class="modal" style="min-width:600px;max-width:720px;max-height:80vh;overflow-y:auto;">
+    <h2 id="archiveViewTitle">Archived Month</h2>
+    <div id="archiveViewContent"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deleteArchive()">Delete</button>
+      <button class="btn" onclick="closeArchiveView()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ STATE ============
+let state = {
+  grossSalary: 60000,
+  taxCode: '1078L',
+  months: [],
+  archive: [],
+  activeTab: 'payslip'
+};
+
+let detailView = 'monthly'; // 'monthly' or 'annual'
+
+const CATEGORIES = ['Housing','Utilities','Transport','Food','Insurance','Subscriptions','Savings','Other'];
+const CAT_CLASSES = {Housing:'cat-housing',Utilities:'cat-utilities',Transport:'cat-transport',Food:'cat-food',Insurance:'cat-insurance',Subscriptions:'cat-subscriptions',Savings:'cat-savings',Other:'cat-other'};
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// ============ LOCAL STORAGE ============
+function saveState() { localStorage.setItem('financeTracker', JSON.stringify(state)); }
+function loadState() {
+  const s = localStorage.getItem('financeTracker');
+  if (s) { try { state = JSON.parse(s); } catch(e) {} }
+}
+
+// ============ TAX CALCULATIONS ============
+function parseTaxCode(code) {
+  const m = code.match(/^(\d+)([A-Z])$/i);
+  if (!m) return { allowance: 12570, suffix: 'L' };
+  return { allowance: parseInt(m[1]) * 10, suffix: m[2].toUpperCase() };
+}
+
+function calcPAYE(grossAnnual, taxCode) {
+  const { allowance } = parseTaxCode(taxCode);
+  const taxable = Math.max(0, grossAnnual - allowance);
+  let tax = 0;
+  const bands = [{ limit: 37700, rate: 0.20 }, { limit: Infinity, rate: 0.40 }];
+  let remaining = taxable;
+  const detail = [];
+  for (const band of bands) {
+    const inBand = Math.min(remaining, band.limit);
+    if (inBand <= 0) break;
+    const bandTax = inBand * band.rate;
+    tax += bandTax;
+    detail.push({ amount: inBand, rate: band.rate, tax: bandTax });
+    remaining -= inBand;
+  }
+  return { annual: tax, monthly: tax / 12, detail, allowance, taxable };
+}
+
+function calcNI(grossAnnual) {
+  const threshold = 12570;
+  const upperLimit = threshold + 37700;
+  const niable = Math.max(0, grossAnnual - threshold);
+  let ni = 0;
+  const detail = [];
+  const band1 = Math.min(niable, 37700);
+  if (band1 > 0) { const t = band1 * 0.08; ni += t; detail.push({ amount: band1, rate: 0.08, ni: t }); }
+  const band2 = Math.max(0, grossAnnual - upperLimit);
+  if (band2 > 0) { const t = band2 * 0.02; ni += t; detail.push({ amount: band2, rate: 0.02, ni: t }); }
+  return { annual: ni, monthly: ni / 12, detail, threshold };
+}
+
+function calcPension(grossAnnual) {
+  const lower = 6240, upper = 50270, rate = 0.04;
+  const pensionable = Math.max(0, Math.min(grossAnnual, upper) - lower);
+  const contribution = pensionable * rate;
+  const grossedUp = contribution / 0.8;
+  return { annual: contribution, monthly: contribution / 12, pensionable, grossedUp, grossedUpMonthly: grossedUp / 12, rate, lowerLimit: lower, upperLimit: upper };
+}
+
+function calcAll() {
+  const gross = state.grossSalary;
+  const paye = calcPAYE(gross, state.taxCode);
+  const ni = calcNI(gross);
+  const pension = calcPension(gross);
+  const totalDeductions = paye.annual + ni.annual + pension.annual;
+  const netAnnual = gross - totalDeductions;
+  return { gross, paye, ni, pension, totalDeductions, netAnnual };
+}
+
+// ============ FORMATTERS ============
+function fmt(n) { return '£' + Math.abs(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmtSigned(n) { return (n < 0 ? '-' : '') + fmt(n); }
+function pct(n) { return (n * 100).toFixed(0) + '%'; }
+
+// ============ DETAIL VIEW TOGGLE ============
+function setDetailView(view) {
+  detailView = view;
+  document.querySelectorAll('#detailViewToggle .view-toggle-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderTaxDetail();
+}
+
+function renderTaxDetail() {
+  const c = calcAll();
+  const div = detailView === 'monthly' ? 12 : 1;
+  const label = detailView === 'monthly' ? '/mo' : '/yr';
+
+  let html = '<table><thead><tr><th>Band</th><th class="right">Earnings' + label + '</th><th class="right">Rate</th><th class="right">Deduction' + label + '</th></tr></thead><tbody>';
+
+  // PAYE
+  html += `<tr><td colspan="4" style="font-weight:700;color:var(--accent);padding-top:16px;font-size:13px;">Income Tax (PAYE)</td></tr>`;
+  html += `<tr><td>Personal Allowance</td><td class="right">${fmt(c.paye.allowance / div)}</td><td class="right">0%</td><td class="right">${fmt(0)}</td></tr>`;
+  c.paye.detail.forEach(d => {
+    html += `<tr><td>${pct(d.rate)} Band</td><td class="right">${fmt(d.amount / div)}</td><td class="right">${pct(d.rate)}</td><td class="right">${fmt(d.tax / div)}</td></tr>`;
+  });
+  html += `<tr class="subtotal-row"><td>Total PAYE</td><td class="right">${fmt(c.paye.taxable / div)}</td><td></td><td class="right" style="color:var(--red);">${fmt(c.paye.annual / div)}</td></tr>`;
+
+  // NI
+  html += `<tr><td colspan="4" style="font-weight:700;color:var(--orange);padding-top:16px;font-size:13px;">Employee National Insurance</td></tr>`;
+  html += `<tr><td>Below Threshold</td><td class="right">${fmt(c.ni.threshold / div)}</td><td class="right">0%</td><td class="right">${fmt(0)}</td></tr>`;
+  c.ni.detail.forEach(d => {
+    html += `<tr><td>${pct(d.rate)} Band</td><td class="right">${fmt(d.amount / div)}</td><td class="right">${pct(d.rate)}</td><td class="right">${fmt(d.ni / div)}</td></tr>`;
+  });
+  html += `<tr class="subtotal-row"><td>Total NI</td><td></td><td></td><td class="right" style="color:var(--red);">${fmt(c.ni.annual / div)}</td></tr>`;
+
+  // Pension
+  html += `<tr><td colspan="4" style="font-weight:700;color:var(--purple);padding-top:16px;font-size:13px;">Pension Contribution</td></tr>`;
+  html += `<tr><td>Below Lower Limit (&pound;${c.pension.lowerLimit.toLocaleString()}${detailView === 'monthly' ? '/yr' : ''})</td><td class="right">${fmt(c.pension.lowerLimit / div)}</td><td class="right">0%</td><td class="right">${fmt(0)}</td></tr>`;
+  html += `<tr><td>Pensionable Band (4%)</td><td class="right">${fmt(c.pension.pensionable / div)}</td><td class="right">4%</td><td class="right">${fmt(c.pension.annual / div)}</td></tr>`;
+  html += `<tr><td>Grossed Up (with 20% tax relief)</td><td></td><td class="right">5%</td><td class="right">${fmt(c.pension.grossedUp / div)}</td></tr>`;
+  html += `<tr class="subtotal-row"><td>Total Pension (employee)</td><td></td><td></td><td class="right" style="color:var(--red);">${fmt(c.pension.annual / div)}</td></tr>`;
+
+  // Grand total
+  html += `<tr class="total-row"><td style="font-size:14px;">Total All Deductions</td><td></td><td></td><td class="right" style="font-size:14px;color:var(--red);">${fmt(c.totalDeductions / div)}</td></tr>`;
+  html += `<tr><td style="font-size:14px;font-weight:700;">Net Take-Home Pay</td><td></td><td></td><td class="right" style="font-size:14px;font-weight:700;color:var(--green);">${fmt(c.netAnnual / div)}</td></tr>`;
+
+  html += '</tbody></table>';
+  document.getElementById('taxDetail').innerHTML = html;
+}
+
+// ============ RENDER PAYSLIP ============
+function recalcPayslip() {
+  state.grossSalary = parseFloat(document.getElementById('grossSalary').value) || 60000;
+  state.taxCode = document.getElementById('taxCode').value || '1078L';
+  saveState();
+  renderPayslip();
+}
+
+function renderPayslip() {
+  const c = calcAll();
+  const mG = c.gross / 12, mP = c.paye.monthly, mN = c.ni.monthly, mPen = c.pension.monthly, mNet = c.netAnnual / 12;
+
+  document.getElementById('payslipSummary').innerHTML = `
+    <div class="summary-card"><div class="summary-label">Gross Monthly</div><div class="summary-value">${fmt(mG)}</div><div class="summary-detail">${fmt(c.gross)} per year</div></div>
+    <div class="summary-card"><div class="summary-label">Income Tax (PAYE)</div><div class="summary-value text-red">${fmt(mP)}</div><div class="summary-detail">${fmt(c.paye.annual)} per year</div></div>
+    <div class="summary-card"><div class="summary-label">Employee NI</div><div class="summary-value text-orange">${fmt(mN)}</div><div class="summary-detail">${fmt(c.ni.annual)} per year</div></div>
+    <div class="summary-card"><div class="summary-label">Pension (4%)</div><div class="summary-value text-purple">${fmt(mPen)}</div><div class="summary-detail">${fmt(c.pension.annual)} per year</div></div>
+    <div class="summary-card"><div class="summary-label">Net Take-Home</div><div class="summary-value text-green">${fmt(mNet)}</div><div class="summary-detail">${fmt(c.netAnnual)} per year</div></div>
+  `;
+
+  document.getElementById('payslipBreakdown').innerHTML = `
+    <div class="payslip-field"><span class="label">Gross Salary</span><span class="value">${fmt(mG)}</span></div>
+    <hr class="section-divider">
+    <div class="payslip-field"><span class="label">Income Tax (PAYE)</span><span class="value text-red">-${fmt(mP)}</span></div>
+    <div class="payslip-field"><span class="label">Employee NI</span><span class="value text-red">-${fmt(mN)}</span></div>
+    <div class="payslip-field"><span class="label">Pension (4%)</span><span class="value text-red">-${fmt(mPen)}</span></div>
+    <hr class="section-divider">
+    <div class="payslip-field"><span class="label" style="font-weight:700;color:var(--text);">Net Take-Home Pay</span><span class="value text-green" style="font-size:16px;">${fmt(mNet)}</span></div>
+    <hr class="section-divider">
+    <div class="payslip-field"><span class="label">Effective Tax Rate</span><span class="value">${((c.totalDeductions/c.gross)*100).toFixed(1)}%</span></div>
+    <div class="payslip-field"><span class="label">Pension (grossed up 5%)</span><span class="value">${fmt(c.pension.grossedUpMonthly)}</span></div>
+  `;
+
+  document.getElementById('annualSummary').innerHTML = `
+    <div class="payslip-field"><span class="label">Gross Annual Salary</span><span class="value">${fmt(c.gross)}</span></div>
+    <hr class="section-divider">
+    <div class="payslip-field"><span class="label">Personal Allowance (${state.taxCode})</span><span class="value">${fmt(c.paye.allowance)}</span></div>
+    <div class="payslip-field"><span class="label">Taxable Income</span><span class="value">${fmt(c.paye.taxable)}</span></div>
+    <hr class="section-divider">
+    <div class="payslip-field"><span class="label">Total Income Tax</span><span class="value text-red">${fmt(c.paye.annual)}</span></div>
+    <div class="payslip-field"><span class="label">Total Employee NI</span><span class="value text-red">${fmt(c.ni.annual)}</span></div>
+    <div class="payslip-field"><span class="label">Total Pension</span><span class="value text-red">${fmt(c.pension.annual)}</span></div>
+    <hr class="section-divider">
+    <div class="payslip-field"><span class="label" style="font-weight:700;color:var(--text);">Total Deductions</span><span class="value text-red" style="font-size:16px;">${fmt(c.totalDeductions)}</span></div>
+    <div class="payslip-field"><span class="label" style="font-weight:700;color:var(--text);">Annual Net Pay</span><span class="value text-green" style="font-size:16px;">${fmt(c.netAnnual)}</span></div>
+  `;
+
+  renderTaxDetail();
+}
+
+// ============ MONTH HELPERS ============
+function getMonthKey(year, month) { return `${year}-${String(month+1).padStart(2,'0')}`; }
+function getMonthLabel(key) { const [y, m] = key.split('-'); return MONTH_NAMES[parseInt(m)-1] + ' ' + y; }
+function getShortMonthLabel(key) { const [y, m] = key.split('-'); return MONTH_NAMES[parseInt(m)-1].slice(0,3) + ' ' + y; }
+
+function getLastMonth() {
+  if (state.months.length > 0) return state.months[state.months.length - 1];
+  return null;
+}
+
+function calcClosing(month) {
+  const netPay = calcAll().netAnnual / 12;
+  const totalExp = month.expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+  return month.openingBalance + netPay - totalExp;
+}
+
+// ============ ADD MONTH ============
+function addMonth() {
+  const sel = document.getElementById('newMonthSelect');
+  sel.innerHTML = '';
+  const now = new Date(2026, 3, 1);
+  for (let i = 0; i < 24; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    const key = getMonthKey(d.getFullYear(), d.getMonth());
+    if (!state.months.find(m => m.key === key)) {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = getMonthLabel(key);
+      sel.appendChild(opt);
+    }
+  }
+
+  const last = getLastMonth();
+  const prevClosing = last ? calcClosing(last) : 0;
+  document.getElementById('newMonthBalance').value = prevClosing.toFixed(2);
+
+  // Show copy option if there's a previous month with expenses
+  const copyRow = document.getElementById('copyExpensesRow');
+  if (last && last.expenses.length > 0) {
+    copyRow.style.display = 'flex';
+    document.getElementById('copyFromLabel').textContent = getMonthLabel(last.key);
+    document.getElementById('copyExpensesCheck').checked = true;
+  } else {
+    copyRow.style.display = 'none';
+  }
+
+  document.getElementById('addMonthModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('addMonthModal').classList.remove('open'); }
+
+function confirmAddMonth() {
+  const key = document.getElementById('newMonthSelect').value;
+  if (!key) return;
+  const openingBalance = parseFloat(document.getElementById('newMonthBalance').value) || 0;
+
+  let expenses = [];
+  const last = getLastMonth();
+  const copyCheck = document.getElementById('copyExpensesCheck');
+  if (last && last.expenses.length > 0 && copyCheck.checked) {
+    // Copy expenses but update dates to new month
+    const [newY, newM] = key.split('-').map(Number);
+    expenses = last.expenses.map(e => {
+      let newDate = e.date || '';
+      if (newDate) {
+        // Keep the day, change month/year
+        const day = newDate.split('-')[2] || '01';
+        // Clamp day to max days in new month
+        const maxDay = new Date(newY, newM, 0).getDate();
+        const clampedDay = Math.min(parseInt(day), maxDay);
+        newDate = `${newY}-${String(newM).padStart(2,'0')}-${String(clampedDay).padStart(2,'0')}`;
+      }
+      return { date: newDate, description: e.description, category: e.category, amount: e.amount };
+    });
+  }
+
+  state.months.push({ key, openingBalance, expenses });
+  state.months.sort((a, b) => a.key.localeCompare(b.key));
+  saveState();
+  closeModal();
+  renderMonthNav();
+  switchTab('month-' + key);
+}
+
+// ============ SIDEBAR NAV ============
+function renderMonthNav() {
+  const container = document.getElementById('monthNavContainer');
+  container.innerHTML = '';
+  state.months.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'nav-item' + (state.activeTab === 'month-' + m.key ? ' active' : '');
+    div.setAttribute('data-tab', 'month-' + m.key);
+    div.onclick = (e) => { if (!e.target.classList.contains('nav-close')) switchTab('month-' + m.key); };
+    div.innerHTML = `<span class="nav-icon">&#128197;</span>${getShortMonthLabel(m.key)}<span class="nav-close" onclick="event.stopPropagation();removeMonth('${m.key}')">&times;</span>`;
+    container.appendChild(div);
+  });
+}
+
+function removeMonth(key) {
+  if (!confirm('Remove ' + getMonthLabel(key) + '? This cannot be undone.')) return;
+  state.months = state.months.filter(m => m.key !== key);
+  const el = document.getElementById('tab-month-' + key);
+  if (el) el.remove();
+  saveState();
+  renderMonthNav();
+  switchTab('payslip');
+}
+
+// ============ RENDER MONTH ============
+function renderMonth(month) {
+  const tabId = 'tab-month-' + month.key;
+  let el = document.getElementById(tabId);
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'tab-content';
+    el.id = tabId;
+    document.querySelector('.content').appendChild(el);
+  }
+
+  const c = calcAll();
+  const netMonthly = c.netAnnual / 12;
+  const totalExpenses = month.expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+  const closing = month.openingBalance + netMonthly - totalExpenses;
+  const remaining = netMonthly - totalExpenses;
+
+  const sorted = [...month.expenses].map((e, i) => ({...e, origIdx: i}));
+  sorted.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+  let runBal = month.openingBalance + netMonthly;
+  const rows = sorted.map(e => { runBal -= (parseFloat(e.amount) || 0); return {...e, runningBalance: runBal}; });
+
+  const catTotals = {};
+  month.expenses.forEach(e => { const cat = e.category || 'Other'; catTotals[cat] = (catTotals[cat] || 0) + (parseFloat(e.amount) || 0); });
+
+  el.innerHTML = `
+    <div class="summary-row">
+      <div class="summary-card"><div class="summary-label">Opening Balance</div><div class="summary-value">${fmt(month.openingBalance)}</div></div>
+      <div class="summary-card"><div class="summary-label">Net Pay In</div><div class="summary-value text-green">+${fmt(netMonthly)}</div><div class="summary-detail">From payslip calc</div></div>
+      <div class="summary-card"><div class="summary-label">Total Outgoings</div><div class="summary-value text-red">${month.expenses.length > 0 ? '-' : ''}${fmt(totalExpenses)}</div><div class="summary-detail">${month.expenses.length} item${month.expenses.length !== 1 ? 's' : ''}</div></div>
+      <div class="summary-card"><div class="summary-label">Remaining from Pay</div><div class="summary-value ${remaining >= 0 ? 'text-green' : 'text-red'}">${fmtSigned(remaining)}</div></div>
+      <div class="summary-card"><div class="summary-label">Closing Balance</div><div class="summary-value ${closing >= 0 ? 'text-green' : 'text-red'}">${fmtSigned(closing)}</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;">
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Expenses &amp; Outgoings</div><div class="card-subtitle">Sorted by date with running balance</div></div>
+          <button class="btn btn-primary btn-sm" onclick="addExpense('${month.key}')">+ Add Row</button>
+        </div>
+        <div class="budget-table-wrap">
+          <table>
+            <thead><tr>
+              <th style="width:105px;">Date</th><th>Description</th><th style="width:110px;">Category</th>
+              <th class="right" style="width:100px;">Amount</th><th class="right" style="width:115px;">Running Bal.</th><th style="width:36px;"></th>
+            </tr></thead>
+            <tbody>
+              ${rows.length === 0 ? '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px;">No expenses yet. Click "+ Add Row" to start.</td></tr>' : ''}
+              ${rows.map(r => `<tr>
+                <td><input type="date" value="${r.date || ''}" onchange="updateExpense('${month.key}',${r.origIdx},'date',this.value)" style="width:100%;padding:4px 6px;"></td>
+                <td><input type="text" value="${(r.description || '').replace(/"/g, '&quot;')}" onchange="updateExpense('${month.key}',${r.origIdx},'description',this.value)" placeholder="e.g. Rent" style="width:100%;padding:4px 6px;"></td>
+                <td><select onchange="updateExpense('${month.key}',${r.origIdx},'category',this.value)" style="width:100%;padding:4px 6px;font-size:12px;">
+                  ${CATEGORIES.map(c => `<option value="${c}" ${r.category===c?'selected':''}>${c}</option>`).join('')}
+                </select></td>
+                <td><input type="number" value="${r.amount || ''}" onchange="updateExpense('${month.key}',${r.origIdx},'amount',this.value)" step="0.01" style="width:100%;padding:4px 6px;text-align:right;"></td>
+                <td class="right ${r.runningBalance >= 0 ? 'positive' : 'negative'}" style="font-weight:700;">${fmtSigned(r.runningBalance)}</td>
+                <td><button class="delete-row-btn" onclick="deleteExpense('${month.key}',${r.origIdx})">&times;</button></td>
+              </tr>`).join('')}
+              ${rows.length > 0 ? `<tr class="total-row"><td></td><td style="font-weight:700;">Total</td><td></td><td class="right text-red" style="font-weight:700;">${fmt(totalExpenses)}</td><td></td><td></td></tr>` : ''}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">By Category</div></div>
+          ${Object.keys(catTotals).length === 0 ? '<p style="color:var(--text-muted);font-size:13px;">No expenses yet</p>' :
+            Object.entries(catTotals).sort((a,b) => b[1]-a[1]).map(([cat, total]) => `
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);">
+                <span class="category-tag ${CAT_CLASSES[cat] || 'cat-other'}">${cat}</span>
+                <span style="font-weight:700;font-size:13px;">${fmt(total)}</span>
+              </div>`).join('')}
+          ${Object.keys(catTotals).length > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;margin-top:4px;"><span style="font-weight:700;font-size:13px;">Total</span><span style="font-weight:700;font-size:13px;color:var(--red);">${fmt(totalExpenses)}</span></div>` : ''}
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="card-header"><div class="card-title">Balance Settings</div></div>
+          <div class="balance-row">
+            <label>Opening Bal:</label>
+            <input type="number" value="${month.openingBalance.toFixed(2)}" onchange="updateOpening('${month.key}', this.value)" step="0.01" style="text-align:right;">
+          </div>
+          <div class="balance-row">
+            <label>Closing Bal:</label>
+            <span class="balance-value ${closing >= 0 ? 'text-green' : 'text-red'}">${fmtSigned(closing)}</span>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <button class="btn btn-danger" onclick="archiveMonth('${month.key}')" style="width:100%;justify-content:center;">Archive This Month</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ============ EXPENSE CRUD ============
+function addExpense(key) {
+  const month = state.months.find(m => m.key === key);
+  if (!month) return;
+  month.expenses.push({ date: '', description: '', category: 'Other', amount: '' });
+  saveState();
+  renderMonth(month);
+}
+
+function updateExpense(key, idx, field, value) {
+  const month = state.months.find(m => m.key === key);
+  if (!month || !month.expenses[idx]) return;
+  month.expenses[idx][field] = field === 'amount' ? parseFloat(value) || 0 : value;
+  saveState();
+  renderMonth(month);
+}
+
+function deleteExpense(key, idx) {
+  const month = state.months.find(m => m.key === key);
+  if (!month) return;
+  month.expenses.splice(idx, 1);
+  saveState();
+  renderMonth(month);
+}
+
+function updateOpening(key, value) {
+  const month = state.months.find(m => m.key === key);
+  if (!month) return;
+  month.openingBalance = parseFloat(value) || 0;
+  saveState();
+  renderMonth(month);
+}
+
+// ============ ARCHIVE ============
+function archiveMonth(key) {
+  if (!confirm('Archive ' + getMonthLabel(key) + '? It will be moved to the Archive tab.')) return;
+  const month = state.months.find(m => m.key === key);
+  if (!month) return;
+
+  const c = calcAll();
+  const netMonthly = c.netAnnual / 12;
+  const totalExpenses = month.expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+  const closing = month.openingBalance + netMonthly - totalExpenses;
+
+  state.archive.push({
+    ...JSON.parse(JSON.stringify(month)),
+    closingBalance: closing, netPayIn: netMonthly, totalExpenses,
+    archivedAt: new Date().toISOString()
+  });
+
+  const monthIdx = state.months.indexOf(month);
+  if (monthIdx < state.months.length - 1) {
+    state.months[monthIdx + 1].openingBalance = closing;
+  }
+
+  state.months = state.months.filter(m => m.key !== key);
+  const el = document.getElementById('tab-month-' + key);
+  if (el) el.remove();
+
+  saveState();
+  renderMonthNav();
+  renderArchive();
+  switchTab('archive');
+}
+
+let currentArchiveIdx = -1;
+
+function renderArchive() {
+  const container = document.getElementById('archiveList');
+  if (state.archive.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#128451;</div><p>No archived months yet.<br>Archive a month from its budget tab.</p></div>';
+    return;
+  }
+  container.innerHTML = state.archive.map((a, i) => `
+    <div class="archive-item">
+      <div class="archive-item-info">
+        <h3>${getMonthLabel(a.key)}</h3>
+        <p>Opening: ${fmt(a.openingBalance)} &middot; Expenses: ${fmt(a.totalExpenses)} &middot; Closing: ${fmtSigned(a.closingBalance)}</p>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm" onclick="viewArchive(${i})">View</button>
+        <button class="btn btn-sm" onclick="restoreArchive(${i})">Restore</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function viewArchive(idx) {
+  currentArchiveIdx = idx;
+  const a = state.archive[idx];
+  document.getElementById('archiveViewTitle').textContent = getMonthLabel(a.key) + ' (Archived)';
+
+  const sorted = [...a.expenses].sort((x, y) => (x.date || '').localeCompare(y.date || ''));
+  let running = a.openingBalance + a.netPayIn;
+
+  document.getElementById('archiveViewContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div class="summary-card"><div class="summary-label">Opening</div><div class="summary-value" style="font-size:16px;">${fmt(a.openingBalance)}</div></div>
+      <div class="summary-card"><div class="summary-label">Net Pay In</div><div class="summary-value text-green" style="font-size:16px;">+${fmt(a.netPayIn)}</div></div>
+      <div class="summary-card"><div class="summary-label">Closing</div><div class="summary-value ${a.closingBalance >= 0 ? 'text-green' : 'text-red'}" style="font-size:16px;">${fmtSigned(a.closingBalance)}</div></div>
+    </div>
+    <table>
+      <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="right">Amount</th><th class="right">Running Bal.</th></tr></thead>
+      <tbody>
+        ${sorted.map(e => {
+          running -= (parseFloat(e.amount) || 0);
+          return `<tr><td>${e.date || '—'}</td><td>${e.description || '—'}</td>
+            <td><span class="category-tag ${CAT_CLASSES[e.category] || 'cat-other'}">${e.category || 'Other'}</span></td>
+            <td class="right">${fmt(parseFloat(e.amount) || 0)}</td>
+            <td class="right ${running >= 0 ? 'positive' : 'negative'}">${fmtSigned(running)}</td></tr>`;
+        }).join('')}
+        <tr class="total-row"><td></td><td>Total Expenses</td><td></td><td class="right text-red">${fmt(a.totalExpenses)}</td><td></td></tr>
+      </tbody>
+    </table>
+  `;
+  document.getElementById('archiveViewModal').classList.add('open');
+}
+
+function closeArchiveView() { document.getElementById('archiveViewModal').classList.remove('open'); currentArchiveIdx = -1; }
+
+function deleteArchive() {
+  if (currentArchiveIdx < 0) return;
+  if (!confirm('Permanently delete this archived month?')) return;
+  state.archive.splice(currentArchiveIdx, 1);
+  saveState();
+  renderArchive();
+  closeArchiveView();
+}
+
+function restoreArchive(idx) {
+  const a = state.archive[idx];
+  if (state.months.find(m => m.key === a.key)) { alert('A tab for ' + getMonthLabel(a.key) + ' already exists.'); return; }
+  state.months.push({ key: a.key, openingBalance: a.openingBalance, expenses: a.expenses });
+  state.months.sort((x, y) => x.key.localeCompare(y.key));
+  state.archive.splice(idx, 1);
+  saveState();
+  renderMonthNav();
+  renderArchive();
+  switchTab('month-' + a.key);
+}
+
+// ============ TAB SWITCHING ============
+function switchTab(tabId) {
+  state.activeTab = tabId;
+
+  document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+
+  const navEl = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
+  if (navEl) navEl.classList.add('active');
+
+  const header = document.getElementById('pageHeader');
+
+  if (tabId === 'payslip') {
+    document.getElementById('tab-payslip').classList.add('active');
+    header.innerHTML = '<h2>Income / Payslip</h2><p>Auto-calculated from your gross salary</p>';
+  } else if (tabId === 'archive') {
+    document.getElementById('tab-archive').classList.add('active');
+    header.innerHTML = '<h2>Archive</h2><p>Previously completed months</p>';
+    renderArchive();
+  } else if (tabId.startsWith('month-')) {
+    const key = tabId.replace('month-', '');
+    const month = state.months.find(m => m.key === key);
+    if (month) {
+      renderMonth(month);
+      document.getElementById('tab-month-' + key).classList.add('active');
+      header.innerHTML = `<h2>${getMonthLabel(key)} Budget</h2><p>Track expenses and cashflow for the month</p>`;
+    }
+  }
+
+  renderMonthNav();
+  saveState();
+}
+
+// ============ INIT ============
+function init() {
+  loadState();
+  document.getElementById('grossSalary').value = state.grossSalary;
+  document.getElementById('taxCode').value = state.taxCode;
+  renderPayslip();
+  renderMonthNav();
+
+  if (state.activeTab && state.activeTab !== 'payslip' && state.activeTab !== 'archive') {
+    const key = state.activeTab.replace('month-', '');
+    const month = state.months.find(m => m.key === key);
+    if (month) renderMonth(month);
+  }
+
+  switchTab(state.activeTab || 'payslip');
+}
+
+init();
+</script>
+</body>
+</html>
