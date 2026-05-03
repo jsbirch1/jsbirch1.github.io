@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finance Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f6f2;
+    --surface: #ffffff;
+    --surface2: #f9faf7;
+    --border: #e2e8dd;
+    --text: #1a1f16;
+    --text-muted: #6b7a62;
+    --accent: #2d6a4f;
+    --accent-light: #52b788;
+    --accent-pale: #d8f3dc;
+    --red: #c0392b;
+    --red-pale: #fdecea;
+    --blue: #2563eb;
+    --blue-pale: #eff6ff;
+    --gold: #b5860d;
+    --gold-pale: #fef9ec;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── PIN SCREEN ── */
+  #pin-screen {
+    position: fixed; inset: 0;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    flex-direction: column;
+    gap: 32px;
+  }
+  #pin-screen.hidden { display: none; }
+
+  .pin-card {
+    background: white;
+    border-radius: 20px;
+    padding: 48px 40px;
+    width: 340px;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+  }
+  .pin-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .pin-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+    font-weight: 300;
+  }
+  .pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .pin-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .pin-dot.filled {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .pin-dot.error {
+    background: var(--red);
+    border-color: var(--red);
+  }
+  .pin-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .pin-key {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.1s;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+  }
+  .pin-key:hover { background: var(--accent-pale); border-color: var(--accent-light); }
+  .pin-key:active { transform: scale(0.95); }
+  .pin-key.del { font-size: 14px; color: var(--text-muted); }
+  .pin-key.empty { visibility: hidden; }
+  .pin-error {
+    color: var(--red);
+    font-size: 13px;
+    min-height: 18px;
+    margin-top: 12px;
+  }
+  .pin-change-hint {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    text-align: center;
+  }
+
+  /* ── CHANGE PIN MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 500;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal-card {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    width: 320px;
+    box-shadow: var(--shadow-lg);
+  }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    margin-bottom: 20px;
+    color: var(--accent);
+  }
+  .modal-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 4px;
+    margin-bottom: 12px;
+    outline: none;
+    transition: border 0.15s;
+  }
+  .modal-input:focus { border-color: var(--accent); }
+  .modal-btns { display: flex; gap: 10px; margin-top: 8px; }
+  .btn-primary {
+    flex: 1; padding: 10px; border: none; border-radius: 8px;
+    background: var(--accent); color: white; font-size: 14px;
+    font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary {
+    flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px;
+    background: white; color: var(--text-muted); font-size: 14px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-secondary:hover { background: var(--bg); }
+  .modal-error { color: var(--red); font-size: 12px; min-height: 16px; }
+
+  /* ── MAIN APP ── */
+  #app { display: none; }
+  #app.visible { display: block; }
+
+  .app-header {
+    background: var(--accent);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .app-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: white;
+    letter-spacing: -0.3px;
+  }
+  .app-logo span { opacity: 0.6; font-size: 14px; font-family: 'DM Sans', sans-serif; font-weight: 300; margin-left: 8px; }
+  .header-actions { display: flex; gap: 12px; align-items: center; }
+  .header-btn {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .header-btn:hover { background: rgba(255,255,255,0.25); }
+
+  /* ── MONTH TABS ── */
+  .month-tabs-wrap {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    position: sticky; top: 62px; z-index: 90;
+  }
+  .month-tabs {
+    display: flex;
+    padding: 0 24px;
+    gap: 2px;
+    white-space: nowrap;
+    min-width: max-content;
+  }
+  .month-tab {
+    padding: 14px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.15s;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .month-tab .tab-month { font-weight: 600; }
+  .month-tab .tab-year { font-size: 11px; opacity: 0.7; }
+  .month-tab:hover { color: var(--accent); }
+  .month-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── MONTH PANEL ── */
+  .month-panel { display: none; padding: 28px 28px 48px; max-width: 1400px; margin: 0 auto; }
+  .month-panel.active { display: block; }
+
+  .summary-bar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .summary-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 6px; }
+  .summary-value { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 600; }
+  .summary-value.green { color: var(--accent); }
+  .summary-value.red { color: var(--red); }
+  .summary-value.blue { color: var(--blue); }
+  .summary-value.gold { color: var(--gold); }
+
+  .panels-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+  .full-width { grid-column: 1 / -1; }
+
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  .badge-green { background: var(--accent-pale); color: var(--accent); }
+  .badge-red { background: var(--red-pale); color: var(--red); }
+  .badge-blue { background: var(--blue-pale); color: var(--blue); }
+  .badge-gold { background: var(--gold-pale); color: var(--gold); }
+
+  /* ── TABLE ── */
+  .entry-table { width: 100%; border-collapse: collapse; }
+  .entry-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--text-muted);
+    padding: 10px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .entry-table th.right { text-align: right; }
+  .entry-table td { padding: 0; border-bottom: 1px solid var(--border); }
+  .entry-table tr:last-child td { border-bottom: none; }
+  .entry-table tr:hover td { background: #fafbf8; }
+
+  .cell-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    padding: 11px 16px;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    background: transparent;
+    color: var(--text);
+  }
+  .cell-input::placeholder { color: #b5bfab; }
+  .cell-input.amount {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    text-align: right;
+    padding-right: 20px;
+  }
+  .cell-input:focus { background: var(--accent-pale); }
+
+  .total-row td {
+    padding: 12px 16px;
+    background: var(--surface2);
+    font-weight: 600;
+    border-top: 2px solid var(--border) !important;
+  }
+  .total-label { font-size: 13px; color: var(--text-muted); }
+  .total-value {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+  }
+
+  /* Savings section */
+  .savings-info {
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+    background: var(--gold-pale);
+    border-bottom: 1px solid #f0e0b0;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* CC balance row */
+  .cc-balance-row td { padding: 0; }
+  .cc-label { font-size: 13px; color: var(--text-muted); padding: 0 16px; }
+  .cc-value { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; }
+  .cc-info { padding: 10px 20px; font-size: 12px; color: var(--text-muted); background: var(--blue-pale); }
+
+  /* ── ADD / DELETE ROW ── */
+  .add-row-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-top: 1px dashed var(--border);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+  }
+  .add-row-btn:hover { background: var(--accent-pale); }
+  .add-row-btn .plus-icon {
+    width: 20px; height: 20px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .del-row-btn {
+    width: 28px; height: 28px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: #c9d4c2;
+    font-size: 15px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    margin-right: 6px;
+  }
+  .del-row-btn:hover { background: var(--red-pale); border-color: var(--red); color: var(--red); }
+
+  td.del-cell {
+    width: 40px;
+    padding: 0 !important;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .entry-table tr:hover .del-row-btn { color: #9aaa90; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .panels-grid { grid-template-columns: 1fr; }
+    .summary-bar { grid-template-columns: repeat(2, 1fr); }
+    .month-panel { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PIN SCREEN -->
+<div id="pin-screen">
+  <div class="pin-card">
+    <div class="pin-logo">Finance Planner</div>
+    <div class="pin-sub">Enter your PIN to continue</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-keypad">
+      <div class="pin-key" onclick="pinKey('1')">1</div>
+      <div class="pin-key" onclick="pinKey('2')">2</div>
+      <div class="pin-key" onclick="pinKey('3')">3</div>
+      <div class="pin-key" onclick="pinKey('4')">4</div>
+      <div class="pin-key" onclick="pinKey('5')">5</div>
+      <div class="pin-key" onclick="pinKey('6')">6</div>
+      <div class="pin-key" onclick="pinKey('7')">7</div>
+      <div class="pin-key" onclick="pinKey('8')">8</div>
+      <div class="pin-key" onclick="pinKey('9')">9</div>
+      <div class="pin-key empty"></div>
+      <div class="pin-key" onclick="pinKey('0')">0</div>
+      <div class="pin-key del" onclick="pinDel()">⌫</div>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+  </div>
+  <div class="pin-change-hint">First time? Default PIN is 1234 — change it after logging in.</div>
+</div>
+
+<!-- CHANGE PIN MODAL -->
+<div class="modal-overlay hidden" id="pin-modal">
+  <div class="modal-card">
+    <div class="modal-title">Change PIN</div>
+    <input type="password" class="modal-input" id="cur-pin" placeholder="Current PIN" maxlength="4" inputmode="numeric">
+    <input type="password" class="modal-input" id="new-pin" placeholder="New PIN (4 digits)" maxlength="4" inputmode="numeric">
+    <input type="password" class="modal-input" id="con-pin" placeholder="Confirm new PIN" maxlength="4" inputmode="numeric">
+    <div class="modal-error" id="pin-modal-error"></div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="savePin()">Update PIN</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <header class="app-header">
+    <div class="app-logo">Finance Planner <span>Personal Forecast</span></div>
+    <div class="header-actions">
+      <button class="header-btn" onclick="openModal()">🔑 Change PIN</button>
+      <button class="header-btn" onclick="lockApp()">🔒 Lock</button>
+    </div>
+  </header>
+
+  <div class="month-tabs-wrap">
+    <div class="month-tabs" id="month-tabs"></div>
+  </div>
+
+  <div id="month-panels"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════
+const INCOME_ROWS = [
+  'Salary / Wages',
+  'Freelance / Side Income',
+  'Other Income'
+];
+
+const EXPENSE_ROWS = [
+  'Mortgage / Rent',
+  'Council Tax',
+  'Gas & Electricity',
+  'Water Rates',
+  'Internet / Broadband',
+  'Mobile Phone',
+  'Subscriptions (Netflix etc.)',
+  'Groceries',
+  'Fuel / Travel',
+  'Car Insurance',
+  'Home Insurance',
+  'Life / Health Insurance',
+  'Gym / Sport',
+  'Clothing / Personal',
+  'Eating Out / Takeaways',
+  'Entertainment / Hobbies',
+  'Gifts / Special Occasions',
+  'Home Maintenance',
+  'Medical / Prescriptions',
+  'Miscellaneous'
+];
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function getMonthList() {
+  const now = new Date();
+  const startMonth = now.getMonth();
+  const startYear = now.getFullYear();
+  const list = [];
+  for (let i = 0; i < 12; i++) {
+    const m = (startMonth + i) % 12;
+    const y = startYear + Math.floor((startMonth + i) / 12);
+    list.push({ month: m, year: y, label: MONTHS[m], key: `${y}-${String(m+1).padStart(2,'0')}` });
+  }
+  return list;
+}
+
+const MONTH_LIST = getMonthList();
+
+// ═══════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════
+function getData(key, def) {
+  try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : def; } catch { return def; }
+}
+function setData(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+function getPin() { return getData('fp_pin', '1234'); }
+function setPin(p) { setData('fp_pin', p); }
+
+function getMonthData(mk) {
+  const def = {
+    income: Array(INCOME_ROWS.length).fill('').map((_, i) => ({ narrative: INCOME_ROWS[i], amount: '' })),
+    expenses: Array(EXPENSE_ROWS.length).fill('').map((_, i) => ({ narrative: EXPENSE_ROWS[i], amount: '' })),
+    savings: { narrative: 'Monthly Savings Transfer', amount: '' },
+    cc1: { name: 'Credit Card 1', balance: '', payment: '' },
+    cc2: { name: 'Credit Card 2', balance: '', payment: '' }
+  };
+  const saved = getData('fp_' + mk, null);
+  if (!saved) return def;
+  if (!saved.income) saved.income = def.income;
+  if (!saved.expenses) saved.expenses = def.expenses;
+  if (!saved.savings) saved.savings = def.savings;
+  if (!saved.cc1) saved.cc1 = def.cc1;
+  if (!saved.cc2) saved.cc2 = def.cc2;
+  return saved;
+}
+function saveMonthData(mk, data) { setData('fp_' + mk, data); }
+
+// ═══════════════════════════════════════════════
+// PIN LOGIC
+// ═══════════════════════════════════════════════
+let pinBuffer = '';
+
+function pinKey(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updateDots();
+  if (pinBuffer.length === 4) {
+    setTimeout(() => checkPin(), 100);
+  }
+}
+
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updateDots(false);
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updateDots(filled = true) {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('d' + i);
+    d.className = 'pin-dot' + (i < pinBuffer.length ? ' filled' : '');
+  }
+}
+
+function checkPin() {
+  if (pinBuffer === getPin()) {
+    document.getElementById('pin-screen').classList.add('hidden');
+    document.getElementById('app').classList.add('visible');
+  } else {
+    for (let i = 0; i < 4; i++) document.getElementById('d' + i).className = 'pin-dot error';
+    document.getElementById('pin-error').textContent = 'Incorrect PIN. Please try again.';
+    setTimeout(() => { pinBuffer = ''; updateDots(); }, 900);
+  }
+}
+
+function lockApp() {
+  pinBuffer = '';
+  updateDots();
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('pin-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+}
+
+function openModal() { document.getElementById('pin-modal').classList.remove('hidden'); }
+function closeModal() {
+  document.getElementById('pin-modal').classList.add('hidden');
+  document.getElementById('cur-pin').value = '';
+  document.getElementById('new-pin').value = '';
+  document.getElementById('con-pin').value = '';
+  document.getElementById('pin-modal-error').textContent = '';
+}
+function savePin() {
+  const cur = document.getElementById('cur-pin').value;
+  const nw = document.getElementById('new-pin').value;
+  const cn = document.getElementById('con-pin').value;
+  const err = document.getElementById('pin-modal-error');
+  if (cur !== getPin()) { err.textContent = 'Current PIN is incorrect.'; return; }
+  if (!/^\d{4}$/.test(nw)) { err.textContent = 'New PIN must be exactly 4 digits.'; return; }
+  if (nw !== cn) { err.textContent = 'PINs do not match.'; return; }
+  setPin(nw);
+  closeModal();
+}
+
+// ═══════════════════════════════════════════════
+// FORMATTING
+// ═══════════════════════════════════════════════
+function fmt(v) {
+  const n = parseFloat(v) || 0;
+  return '£' + n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function num(v) { return parseFloat(v) || 0; }
+
+// ═══════════════════════════════════════════════
+// BUILD UI
+// ═══════════════════════════════════════════════
+function buildTabs() {
+  const container = document.getElementById('month-tabs');
+  MONTH_LIST.forEach((m, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'month-tab' + (i === 0 ? ' active' : '');
+    tab.dataset.idx = i;
+    tab.innerHTML = `<span class="tab-month">${m.label}</span><span class="tab-year">${m.year}</span>`;
+    tab.onclick = () => switchTab(i);
+    container.appendChild(tab);
+  });
+}
+
+function switchTab(idx) {
+  document.querySelectorAll('.month-tab').forEach((t, i) => t.classList.toggle('active', i === idx));
+  document.querySelectorAll('.month-panel').forEach((p, i) => p.classList.toggle('active', i === idx));
+}
+
+let saveTimers = {};
+
+function buildPanels() {
+  const container = document.getElementById('month-panels');
+  MONTH_LIST.forEach((m, idx) => {
+    const data = getMonthData(m.key);
+    const panel = document.createElement('div');
+    panel.className = 'month-panel' + (idx === 0 ? ' active' : '');
+    panel.dataset.mk = m.key;
+    panel.innerHTML = buildPanelHTML(m, data);
+    container.appendChild(panel);
+    attachListeners(panel, m.key);
+    refreshSummary(m.key);
+  });
+}
+
+function buildPanelHTML(m, data) {
+  // Income rows
+  const incomeRows = data.income.map((row, i) => `
+    <tr>
+      <td><input class="cell-input" data-field="income-${i}-narrative" value="${esc(row.narrative)}" placeholder="Income description"></td>
+      <td><input class="cell-input amount" data-field="income-${i}-amount" value="${esc(row.amount)}" placeholder="0.00"></td>
+    </tr>`).join('');
+
+  // Expense rows — each gets a delete button
+  const expenseRows = data.expenses.map((row, i) => `
+    <tr data-exp-row="${i}">
+      <td class="del-cell"><button class="del-row-btn" title="Remove row" onclick="deleteExpenseRow('${m.key}', ${i})">×</button></td>
+      <td><input class="cell-input" data-field="expense-${i}-narrative" value="${esc(row.narrative)}" placeholder="Expense description"></td>
+      <td><input class="cell-input amount" data-field="expense-${i}-amount" value="${esc(row.amount)}" placeholder="0.00"></td>
+    </tr>`).join('');
+
+  return `
+  <!-- SUMMARY BAR -->
+  <div class="summary-bar" id="summary-${m.key}">
+    <div class="summary-card"><div class="summary-label">Total Income</div><div class="summary-value green" id="s-inc-${m.key}">£0.00</div></div>
+    <div class="summary-card"><div class="summary-label">Total Expenses</div><div class="summary-value red" id="s-exp-${m.key}">£0.00</div></div>
+    <div class="summary-card"><div class="summary-label">Net (before savings)</div><div class="summary-value" id="s-net-${m.key}">£0.00</div></div>
+    <div class="summary-card"><div class="summary-label">Savings This Month</div><div class="summary-value gold" id="s-sav-${m.key}">£0.00</div></div>
+    <div class="summary-card"><div class="summary-label">Disposable Balance</div><div class="summary-value blue" id="s-dis-${m.key}">£0.00</div></div>
+  </div>
+
+  <div class="panels-grid">
+    <!-- INCOME -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">💰 Income</div>
+        <div class="section-badge badge-green" id="total-inc-${m.key}">£0.00</div>
+      </div>
+      <table class="entry-table">
+        <thead><tr><th>Narrative</th><th class="right">Amount (£)</th></tr></thead>
+        <tbody>${incomeRows}</tbody>
+        <tfoot><tr class="total-row"><td class="total-label">Total Income</td><td class="total-value" id="t-inc-${m.key}">£0.00</td></tr></tfoot>
+      </table>
+    </div>
+
+    <!-- SAVINGS -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">🏦 Savings Account</div>
+        <div class="section-badge badge-gold" id="total-sav-${m.key}">£0.00 transferred</div>
+      </div>
+      <div class="savings-info">💡 Savings transfers are deducted from your main account balance and accumulate below.</div>
+      <table class="entry-table">
+        <thead><tr><th>Description</th><th class="right">Monthly Transfer (£)</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><input class="cell-input" data-field="savings-narrative" value="${esc(data.savings.narrative)}" placeholder="e.g. Monthly Savings Transfer"></td>
+            <td><input class="cell-input amount" data-field="savings-amount" value="${esc(data.savings.amount)}" placeholder="0.00"></td>
+          </tr>
+        </tbody>
+        <tfoot><tr class="total-row"><td class="total-label">Running Savings Total (all months)</td><td class="total-value gold" id="t-sav-${m.key}">£0.00</td></tr></tfoot>
+      </table>
+    </div>
+
+    <!-- EXPENSES -->
+    <div class="section-card full-width">
+      <div class="section-header">
+        <div class="section-title">📋 Monthly Expenses</div>
+        <div class="section-badge badge-red" id="total-exp-${m.key}">£0.00</div>
+      </div>
+      <table class="entry-table" id="exp-table-${m.key}">
+        <thead><tr><th style="width:40px"></th><th>Narrative</th><th class="right">Amount (£)</th></tr></thead>
+        <tbody id="exp-tbody-${m.key}">${expenseRows}</tbody>
+        <tfoot>
+          <tr><td colspan="3" style="padding:0">
+            <button class="add-row-btn" onclick="addExpenseRow('${m.key}')">
+              <span class="plus-icon">+</span> Add expense category
+            </button>
+          </td></tr>
+          <tr class="total-row"><td></td><td class="total-label">Total Expenses</td><td class="total-value" id="t-exp-${m.key}">£0.00</td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- CREDIT CARD 1 -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">💳 <input class="cell-input" data-field="cc1-name" value="${esc(data.cc1.name)}" style="font-size:15px;font-family:'DM Serif Display',serif;padding:0;width:160px;"></div>
+        <div class="section-badge badge-blue" id="total-cc1-${m.key}">Balance: £0.00</div>
+      </div>
+      <div class="cc-info">Enter the card balance, then set the monthly payment. The payment is deducted from your main account and reduces the card balance.</div>
+      <table class="entry-table">
+        <thead><tr><th>Field</th><th class="right">Amount (£)</th></tr></thead>
+        <tbody>
+          <tr><td><div class="cell-input cc-label">Opening Balance</div></td>
+              <td><input class="cell-input amount" data-field="cc1-balance" value="${esc(data.cc1.balance)}" placeholder="0.00"></td></tr>
+          <tr><td><div class="cell-input cc-label">Monthly Payment (from main account)</div></td>
+              <td><input class="cell-input amount" data-field="cc1-payment" value="${esc(data.cc1.payment)}" placeholder="0.00"></td></tr>
+        </tbody>
+        <tfoot><tr class="total-row"><td class="total-label">Closing Balance after Payment</td><td class="total-value" id="t-cc1-${m.key}">£0.00</td></tr></tfoot>
+      </table>
+    </div>
+
+    <!-- CREDIT CARD 2 -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title">💳 <input class="cell-input" data-field="cc2-name" value="${esc(data.cc2.name)}" style="font-size:15px;font-family:'DM Serif Display',serif;padding:0;width:160px;"></div>
+        <div class="section-badge badge-blue" id="total-cc2-${m.key}">Balance: £0.00</div>
+      </div>
+      <div class="cc-info">Enter the card balance, then set the monthly payment. The payment is deducted from your main account and reduces the card balance.</div>
+      <table class="entry-table">
+        <thead><tr><th>Field</th><th class="right">Amount (£)</th></tr></thead>
+        <tbody>
+          <tr><td><div class="cell-input cc-label">Opening Balance</div></td>
+              <td><input class="cell-input amount" data-field="cc2-balance" value="${esc(data.cc2.balance)}" placeholder="0.00"></td></tr>
+          <tr><td><div class="cell-input cc-label">Monthly Payment (from main account)</div></td>
+              <td><input class="cell-input amount" data-field="cc2-payment" value="${esc(data.cc2.payment)}" placeholder="0.00"></td></tr>
+        </tbody>
+        <tfoot><tr class="total-row"><td class="total-label">Closing Balance after Payment</td><td class="total-value" id="t-cc2-${m.key}">£0.00</td></tr></tfoot>
+      </table>
+    </div>
+  </div>`;
+}
+
+function esc(s) { return String(s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+function attachListeners(panel, mk) {
+  panel.querySelectorAll('.cell-input').forEach(input => {
+    input.addEventListener('input', () => {
+      clearTimeout(saveTimers[mk]);
+      saveTimers[mk] = setTimeout(() => {
+        collectAndSave(mk);
+        refreshSummary(mk);
+      }, 200);
+    });
+  });
+}
+
+function collectAndSave(mk) {
+  const panel = document.querySelector(`[data-mk="${mk}"]`);
+  const data = getMonthData(mk);
+
+  // Re-collect expenses dynamically from DOM rows (handles add/delete)
+  const expRows = panel.querySelectorAll('#exp-tbody-' + mk + ' tr[data-exp-row]');
+  data.expenses = Array.from(expRows).map(row => {
+    const narr = row.querySelector('input[data-field$="-narrative"]');
+    const amt  = row.querySelector('input[data-field$="-amount"]');
+    return { narrative: narr ? narr.value : '', amount: amt ? amt.value : '' };
+  });
+
+  panel.querySelectorAll('.cell-input[data-field]').forEach(inp => {
+    const f = inp.dataset.field;
+    const v = inp.value;
+    if (f.startsWith('income-')) {
+      const parts = f.split('-'); // income-i-prop
+      const i = parts[1], prop = parts[2];
+      if (data.income[i]) data.income[i][prop] = v;
+    } else if (f === 'savings-narrative') data.savings.narrative = v;
+    else if (f === 'savings-amount') data.savings.amount = v;
+    else if (f === 'cc1-name') data.cc1.name = v;
+    else if (f === 'cc1-balance') data.cc1.balance = v;
+    else if (f === 'cc1-payment') data.cc1.payment = v;
+    else if (f === 'cc2-name') data.cc2.name = v;
+    else if (f === 'cc2-balance') data.cc2.balance = v;
+    else if (f === 'cc2-payment') data.cc2.payment = v;
+  });
+  saveMonthData(mk, data);
+}
+
+function addExpenseRow(mk) {
+  const data = getMonthData(mk);
+  const newIdx = data.expenses.length;
+  data.expenses.push({ narrative: '', amount: '' });
+  saveMonthData(mk, data);
+
+  const tbody = document.getElementById('exp-tbody-' + mk);
+  const tr = document.createElement('tr');
+  tr.dataset.expRow = newIdx;
+  tr.innerHTML = `
+    <td class="del-cell"><button class="del-row-btn" title="Remove row" onclick="deleteExpenseRow('${mk}', ${newIdx})">×</button></td>
+    <td><input class="cell-input" data-field="expense-${newIdx}-narrative" value="" placeholder="Expense description"></td>
+    <td><input class="cell-input amount" data-field="expense-${newIdx}-amount" value="" placeholder="0.00"></td>`;
+  tbody.appendChild(tr);
+
+  // Attach listeners to new inputs
+  tr.querySelectorAll('.cell-input').forEach(input => {
+    input.addEventListener('input', () => {
+      clearTimeout(saveTimers[mk]);
+      saveTimers[mk] = setTimeout(() => { collectAndSave(mk); refreshSummary(mk); }, 200);
+    });
+  });
+
+  // Focus new narrative input
+  tr.querySelector('input').focus();
+}
+
+function deleteExpenseRow(mk, rowIdx) {
+  const panel = document.querySelector(`[data-mk="${mk}"]`);
+  const tbody = document.getElementById('exp-tbody-' + mk);
+  const rows = tbody.querySelectorAll('tr[data-exp-row]');
+
+  // Don't delete if only 1 row remains
+  if (rows.length <= 1) return;
+
+  // Find and remove the row matching rowIdx
+  rows.forEach(row => {
+    if (parseInt(row.dataset.expRow) === rowIdx) row.remove();
+  });
+
+  // Re-index remaining rows to stay sequential
+  const remaining = tbody.querySelectorAll('tr[data-exp-row]');
+  remaining.forEach((row, newIdx) => {
+    row.dataset.expRow = newIdx;
+    const narr = row.querySelector('input[data-field$="-narrative"]');
+    const amt  = row.querySelector('input[data-field$="-amount"]');
+    if (narr) narr.dataset.field = `expense-${newIdx}-narrative`;
+    if (amt)  amt.dataset.field  = `expense-${newIdx}-amount`;
+    const btn = row.querySelector('.del-row-btn');
+    if (btn) btn.setAttribute('onclick', `deleteExpenseRow('${mk}', ${newIdx})`);
+  });
+
+  collectAndSave(mk);
+  refreshSummary(mk);
+}
+
+function refreshSummary(mk) {
+  const data = getMonthData(mk);
+  const totalInc = data.income.reduce((s, r) => s + num(r.amount), 0);
+  const totalExp = data.expenses.reduce((s, r) => s + num(r.amount), 0);
+  const savAmt = num(data.savings.amount);
+  const cc1pay = num(data.cc1.payment);
+  const cc2pay = num(data.cc2.payment);
+  const net = totalInc - totalExp - savAmt - cc1pay - cc2pay;
+  const cc1close = num(data.cc1.balance) - cc1pay;
+  const cc2close = num(data.cc2.balance) - cc2pay;
+
+  // Running savings across all months up to and including this one
+  const mkIdx = MONTH_LIST.findIndex(m => m.key === mk);
+  let runningSav = 0;
+  for (let i = 0; i <= mkIdx; i++) {
+    const d = getMonthData(MONTH_LIST[i].key);
+    runningSav += num(d.savings.amount);
+  }
+
+  set(mk, 'total-inc', fmt(totalInc), 'green');
+  set(mk, 'total-exp', fmt(totalExp), 'red');
+  set(mk, 't-inc', fmt(totalInc));
+  set(mk, 't-exp', fmt(totalExp));
+  set(mk, 't-sav', fmt(runningSav), 'gold');
+  set(mk, 't-cc1', fmt(Math.max(0, cc1close)));
+  set(mk, 't-cc2', fmt(Math.max(0, cc2close)));
+
+  // Badges
+  badgeSet(`total-inc-${mk}`, fmt(totalInc));
+  badgeSet(`total-exp-${mk}`, fmt(totalExp));
+  badgeSet(`total-sav-${mk}`, fmt(savAmt) + ' transferred');
+  badgeSet(`total-cc1-${mk}`, 'Balance: ' + fmt(Math.max(0, cc1close)));
+  badgeSet(`total-cc2-${mk}`, 'Balance: ' + fmt(Math.max(0, cc2close)));
+
+  // Summary bar
+  el(`s-inc-${mk}`).textContent = fmt(totalInc);
+  el(`s-exp-${mk}`).textContent = fmt(totalExp);
+  const netEl = el(`s-net-${mk}`);
+  const netBeforeSav = totalInc - totalExp;
+  netEl.textContent = fmt(netBeforeSav);
+  netEl.style.color = netBeforeSav >= 0 ? 'var(--accent)' : 'var(--red)';
+  el(`s-sav-${mk}`).textContent = fmt(savAmt);
+  const disEl = el(`s-dis-${mk}`);
+  disEl.textContent = fmt(net);
+  disEl.style.color = net >= 0 ? 'var(--blue)' : 'var(--red)';
+}
+
+function el(id) { return document.getElementById(id); }
+function set(mk, prefix, val, color) {
+  const e = el(`${prefix}-${mk}`);
+  if (!e) return;
+  e.textContent = val;
+  if (color) e.style.color = `var(--${color})`;
+}
+function badgeSet(id, val) { const e = el(id); if (e) e.textContent = val; }
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+buildTabs();
+buildPanels();
+</script>
+</body>
+</html>
